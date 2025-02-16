@@ -1,27 +1,45 @@
-import React from 'react';
-import { Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, useMediaQuery } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, CircularProgress, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-
-// Sample booking data (Replace with actual API data)
-const sampleBookings = [
-  { id: 1, item: 'Room A', date: '2025-02-20', time: '10:00 AM', status: 'Confirmed' },
-  { id: 2, item: 'Car Rental', date: '2025-02-22', time: '2:00 PM', status: 'Pending' }
-];
+import API from '../utils/axios'; // Import API for backend requests
 
 const UserDashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Function to handle booking edit (Add actual logic)
-  const handleEditBooking = (bookingId) => {
-    console.log(`Editing booking with ID: ${bookingId}`);
-    // Add logic to navigate to edit page or open modal
-  };
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  // Function to handle booking cancellation (Add actual logic)
-  const handleCancelBooking = (bookingId) => {
-    console.log(`Canceling booking with ID: ${bookingId}`);
-    // Add logic to cancel the booking in backend
+  // Fetch user bookings from backend API
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await API.get('/bookings');
+        setBookings(res.data);
+      } catch (error) {
+        setError(true);
+        console.error("Error fetching bookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  // Handle booking cancellation
+  const handleCancelBooking = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+
+    try {
+      const res = await API.put(`/bookings/${bookingId}/cancel`);
+      setBookings(bookings.map(booking => booking._id === bookingId ? { ...booking, status: 'Cancelled' } : booking));
+      alert("Booking cancelled successfully.");
+    } catch (error) {
+      console.error("Error canceling booking:", error);
+      alert("Failed to cancel booking. Please try again.");
+    }
   };
 
   return (
@@ -30,43 +48,32 @@ const UserDashboard = () => {
         User Dashboard
       </Typography>
 
-      <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+      {/* Loading & Error Handling */}
+      {loading && <CircularProgress />}
+      {error && <Typography color="error">Failed to load bookings.</Typography>}
+
+      {/* Bookings Table */}
+      <TableContainer component={Paper} sx={{ overflowX: 'auto', mt: 2 }}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell><b>Item</b></TableCell>
               <TableCell><b>Date</b></TableCell>
-              <TableCell><b>Time</b></TableCell>
               <TableCell><b>Status</b></TableCell>
               <TableCell><b>Actions</b></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {sampleBookings.map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell>{booking.item}</TableCell>
-                <TableCell>{booking.date}</TableCell>
-                <TableCell>{booking.time}</TableCell>
+            {bookings.map((booking) => (
+              <TableRow key={booking._id}>
+                <TableCell>{booking.item?.title || "N/A"}</TableCell>
+                <TableCell>{new Date(booking.startDate).toLocaleDateString()}</TableCell>
                 <TableCell>{booking.status}</TableCell>
                 <TableCell>
-                  {isMobile ? (
-                    <>
-                      <Button variant="outlined" color="primary" size="small" fullWidth sx={{ mb: 1 }} onClick={() => handleEditBooking(booking.id)}>
-                        Edit
-                      </Button>
-                      <Button variant="outlined" color="error" size="small" fullWidth onClick={() => handleCancelBooking(booking.id)}>
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="outlined" color="primary" size="small" onClick={() => handleEditBooking(booking.id)}>
-                        Edit
-                      </Button>
-                      <Button variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => handleCancelBooking(booking.id)}>
-                        Cancel
-                      </Button>
-                    </>
+                  {booking.status !== "Cancelled" && (
+                    <Button variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => handleCancelBooking(booking._id)}>
+                      Cancel
+                    </Button>
                   )}
                 </TableCell>
               </TableRow>

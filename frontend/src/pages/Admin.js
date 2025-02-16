@@ -1,60 +1,108 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, 
-  useMediaQuery 
+  useMediaQuery, CircularProgress 
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-
-// Sample data (Replace with API data)
-const sampleItems = [
-  { id: 1, name: 'Deluxe Room', price: '$200', status: 'Available' },
-  { id: 2, name: 'SUV Rental', price: '$80', status: 'Booked' }
-];
-
-const sampleUsers = [
-  { id: 1, name: 'John Doe', email: 'john@example.com', role: 'User' },
-  { id: 2, name: 'Admin User', email: 'admin@example.com', role: 'Admin' }
-];
+import API from '../utils/axios';
 
 const AdminPanel = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // State for managing modals
+  // States
+  const [items, setItems] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // Modal states
   const [openItemModal, setOpenItemModal] = useState(false);
   const [openUserModal, setOpenUserModal] = useState(false);
+  const [newItem, setNewItem] = useState({ title: '', price: '', availability: true });
+  const [newUser, setNewUser] = useState({ username: '', email: '', role: 'user' });
 
-  const [newItem, setNewItem] = useState({ name: '', price: '', status: 'Available' });
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'User' });
+  // Fetch items and users on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [itemsRes, usersRes] = await Promise.all([
+          API.get('/items'),
+          API.get('/admin/users')
+        ]);
+        setItems(itemsRes.data);
+        setUsers(usersRes.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Open & Close modals
   const handleOpenItemModal = () => setOpenItemModal(true);
   const handleCloseItemModal = () => setOpenItemModal(false);
-
   const handleOpenUserModal = () => setOpenUserModal(true);
   const handleCloseUserModal = () => setOpenUserModal(false);
 
-  // Handle form input changes
-  const handleItemChange = (e) => {
-    setNewItem({ ...newItem, [e.target.name]: e.target.value });
+  // Handle input changes
+  const handleItemChange = (e) => setNewItem({ ...newItem, [e.target.name]: e.target.value });
+  const handleUserChange = (e) => setNewUser({ ...newUser, [e.target.name]: e.target.value });
+
+  // Add Item (Admin only)
+  const handleAddItem = async () => {
+    try {
+      const res = await API.post('/items', newItem);
+      setItems([...items, res.data]);
+      handleCloseItemModal();
+    } catch (error) {
+      console.error("Error adding item:", error);
+      alert("Failed to add item.");
+    }
   };
 
-  const handleUserChange = (e) => {
-    setNewUser({ ...newUser, [e.target.name]: e.target.value });
+  // Delete Item (Admin only)
+  const handleDeleteItem = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
+
+    try {
+      await API.delete(`/items/${id}`);
+      setItems(items.filter(item => item._id !== id));
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      alert("Failed to delete item.");
+    }
   };
 
-  // Add Item (Replace with API call)
-  const handleAddItem = () => {
-    console.log("New Item Added:", newItem);
-    handleCloseItemModal();
+  // Add User (Admin only)
+  const handleAddUser = async () => {
+    try {
+      const res = await API.post('/auth/register', newUser);
+      setUsers([...users, res.data]);
+      handleCloseUserModal();
+    } catch (error) {
+      console.error("Error adding user:", error);
+      alert("Failed to add user.");
+    }
   };
 
-  // Add User (Replace with API call)
-  const handleAddUser = () => {
-    console.log("New User Added:", newUser);
-    handleCloseUserModal();
+  // Delete User (Admin only)
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      await API.delete(`/admin/users/${id}`);
+      setUsers(users.filter(user => user._id !== id));
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Failed to delete user.");
+    }
   };
 
   return (
@@ -62,6 +110,10 @@ const AdminPanel = () => {
       <Typography variant="h4" gutterBottom>
         Admin Panel
       </Typography>
+
+      {/* Loading & Error Handling */}
+      {loading && <CircularProgress />}
+      {error && <Typography color="error">Failed to load data.</Typography>}
 
       {/* Booking Items Management */}
       <Typography variant="h5" sx={{ mt: 2, mb: 1 }}>
@@ -81,16 +133,13 @@ const AdminPanel = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sampleItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.price}</TableCell>
-                <TableCell>{item.status}</TableCell>
+            {items.map((item) => (
+              <TableRow key={item._id}>
+                <TableCell>{item.title}</TableCell>
+                <TableCell>${item.price}</TableCell>
+                <TableCell>{item.availability ? 'Available' : 'Booked'}</TableCell>
                 <TableCell>
-                  <IconButton color="primary">
-                    <Edit />
-                  </IconButton>
-                  <IconButton color="error">
+                  <IconButton color="error" onClick={() => handleDeleteItem(item._id)}>
                     <Delete />
                   </IconButton>
                 </TableCell>
@@ -118,16 +167,13 @@ const AdminPanel = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sampleUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
+            {users.map((user) => (
+              <TableRow key={user._id}>
+                <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
-                  <IconButton color="primary">
-                    <Edit />
-                  </IconButton>
-                  <IconButton color="error">
+                  <IconButton color="error" onClick={() => handleDeleteUser(user._id)}>
                     <Delete />
                   </IconButton>
                 </TableCell>
@@ -141,27 +187,12 @@ const AdminPanel = () => {
       <Dialog open={openItemModal} onClose={handleCloseItemModal}>
         <DialogTitle>Add New Item</DialogTitle>
         <DialogContent>
-          <TextField fullWidth label="Item Name" name="name" value={newItem.name} onChange={handleItemChange} sx={{ mt: 2 }} />
-          <TextField fullWidth label="Price" name="price" type="number" value={newItem.price} onChange={handleItemChange} sx={{ mt: 2 }} />
-          <TextField fullWidth label="Status" name="status" value={newItem.status} onChange={handleItemChange} sx={{ mt: 2 }} />
+          <TextField fullWidth label="Item Name" name="title" onChange={handleItemChange} sx={{ mt: 2 }} />
+          <TextField fullWidth label="Price" name="price" type="number" onChange={handleItemChange} sx={{ mt: 2 }} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseItemModal} color="secondary">Cancel</Button>
           <Button onClick={handleAddItem} color="primary" variant="contained">Add</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Add User Modal */}
-      <Dialog open={openUserModal} onClose={handleCloseUserModal}>
-        <DialogTitle>Add New User</DialogTitle>
-        <DialogContent>
-          <TextField fullWidth label="Full Name" name="name" value={newUser.name} onChange={handleUserChange} sx={{ mt: 2 }} />
-          <TextField fullWidth label="Email" name="email" type="email" value={newUser.email} onChange={handleUserChange} sx={{ mt: 2 }} />
-          <TextField fullWidth label="Role" name="role" value={newUser.role} onChange={handleUserChange} sx={{ mt: 2 }} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseUserModal} color="secondary">Cancel</Button>
-          <Button onClick={handleAddUser} color="primary" variant="contained">Add</Button>
         </DialogActions>
       </Dialog>
     </Container>

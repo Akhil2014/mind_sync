@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Paper, Box } from '@mui/material';
-
-// Placeholder function to handle user login
-const handleLogin = (e, formData) => {
-  e.preventDefault();
-  console.log('Logging in user:', formData);
-  // Add API call logic here
-};
+import { Container, TextField, Button, Typography, Paper, Box, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import API from '../utils/axios';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const res = await API.post('/auth/login', formData);
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+
+      navigate('/dashboard'); // Redirect to dashboard after login
+    } catch (error) {
+      setError(error.response?.data?.error || 'Invalid credentials');
+    }
   };
 
   return (
@@ -24,7 +33,8 @@ const Login = () => {
         <Typography variant="h4" gutterBottom align="center">
           Login
         </Typography>
-        <Box component="form" onSubmit={(e) => handleLogin(e, formData)}>
+        {error && <Alert severity="error">{error}</Alert>}
+        <Box component="form" onSubmit={handleLogin}>
           <TextField
             fullWidth
             label="Email"
@@ -32,6 +42,7 @@ const Login = () => {
             type="email"
             variant="outlined"
             margin="normal"
+            value={formData.email}
             onChange={handleChange}
             required
           />
@@ -42,6 +53,7 @@ const Login = () => {
             type="password"
             variant="outlined"
             margin="normal"
+            value={formData.password}
             onChange={handleChange}
             required
           />

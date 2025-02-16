@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText, Box, Avatar, Menu, MenuItem } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Link } from 'react-router-dom';
-
-// Sample user data (Replace with actual authenticated user data)
-const sampleUser = {
-  name: 'John Doe',
-  avatar: 'https://i.pravatar.cc/40', // Replace with actual avatar URL
-  isAuthenticated: true // Change this based on login status
-};
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null); // For avatar menu
+  const [user, setUser] = useState(null); // Stores authenticated user
+  const navigate = useNavigate();
+
+  // Fetch user data from localStorage
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    setUser(storedUser);
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -27,9 +28,10 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    console.log('User logged out');
-    // Add logic to clear JWT & redirect to login
-    setAnchorEl(null);
+    localStorage.removeItem('token'); // Remove JWT
+    localStorage.removeItem('user'); // Remove user data
+    setUser(null);
+    navigate('/login'); // Redirect to login
   };
 
   return (
@@ -47,21 +49,17 @@ const Navbar = () => {
             <Button color="inherit" component={Link} to="/">
               Home
             </Button>
-            <Button color="inherit" component={Link} to="/dashboard">
-              Dashboard
-            </Button>
-            <Button color="inherit" component={Link} to="/admin">
-              Admin
-            </Button>
+            {user && <Button color="inherit" component={Link} to="/dashboard">Dashboard</Button>}
+            {user?.role === 'admin' && <Button color="inherit" component={Link} to="/admin">Admin</Button>}
 
-            {sampleUser.isAuthenticated ? (
+            {user ? (
               <>
                 {/* User Avatar & Name */}
                 <IconButton onClick={handleAvatarClick} sx={{ ml: 2 }}>
-                  <Avatar src={sampleUser.avatar} />
+                  <Avatar src={user.avatar || "https://i.pravatar.cc/40"} />
                 </IconButton>
                 <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-                  <MenuItem disabled>{sampleUser.name}</MenuItem>
+                  <MenuItem disabled>{user.username}</MenuItem>
                   <MenuItem onClick={handleLogout}>Logout</MenuItem>
                 </Menu>
               </>
@@ -96,18 +94,18 @@ const Navbar = () => {
           <ListItem button component={Link} to="/" onClick={handleDrawerToggle}>
             <ListItemText primary="Home" />
           </ListItem>
-          <ListItem button component={Link} to="/dashboard" onClick={handleDrawerToggle}>
+          {user && <ListItem button component={Link} to="/dashboard" onClick={handleDrawerToggle}>
             <ListItemText primary="Dashboard" />
-          </ListItem>
-          <ListItem button component={Link} to="/admin" onClick={handleDrawerToggle}>
+          </ListItem>}
+          {user?.role === 'admin' && <ListItem button component={Link} to="/admin" onClick={handleDrawerToggle}>
             <ListItemText primary="Admin" />
-          </ListItem>
+          </ListItem>}
 
-          {sampleUser.isAuthenticated ? (
+          {user ? (
             <>
               <ListItem>
-                <Avatar src={sampleUser.avatar} sx={{ mr: 2 }} />
-                <Typography>{sampleUser.name}</Typography>
+                <Avatar src={user.avatar || "https://i.pravatar.cc/40"} sx={{ mr: 2 }} />
+                <Typography>{user.username}</Typography>
               </ListItem>
               <ListItem button onClick={handleLogout}>
                 <ListItemText primary="Logout" />

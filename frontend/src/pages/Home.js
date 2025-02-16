@@ -1,30 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, Typography, Grid, Card, CardMedia, CardContent, CardActions, Button, 
   Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent, DialogActions, 
-  TextField 
+  TextField, CircularProgress 
 } from '@mui/material';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-
-// Sample booking items (Replace with API data)
-const sampleItems = [
-  { id: 1, title: 'Deluxe Room', description: 'Luxury room with ocean view', price: 200, status: 'Available', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop' },
-  { id: 2, title: 'SUV Rental', description: 'Spacious SUV for road trips', price: 80, status: 'Booked', image: 'https://images.unsplash.com/photo-1615749895081-795f67a15e2b?w=400&h=300&fit=crop' },
-  { id: 3, title: 'Spa Service', description: 'Relaxing full-body massage', price: 50, status: 'Available', image: 'https://images.unsplash.com/photo-1598550476431-22c5cc4898d4?w=400&h=300&fit=crop' },
-  { id: 4, title: 'Luxury Suite', description: 'Spacious suite with private pool', price: 350, status: 'Available', image: 'https://images.unsplash.com/photo-1613553494071-06c235f296f3?w=400&h=300&fit=crop' },
-  { id: 5, title: 'Convertible Rental', description: 'Luxury convertible for city drives', price: 120, status: 'Booked', image: 'https://images.unsplash.com/photo-1616775715422-1cd71f6b2b7a?w=400&h=300&fit=crop' },
-  { id: 6, title: 'Yoga Session', description: 'One-hour guided meditation and yoga', price: 40, status: 'Available', image: 'https://images.unsplash.com/photo-1593005510545-89d328652159?w=400&h=300&fit=crop' },
-  { id: 7, title: 'Business Room', description: 'Conference room for business meetings', price: 180, status: 'Available', image: 'https://images.unsplash.com/photo-1578898886225-f75c79b767f3?w=400&h=300&fit=crop' },
-  { id: 8, title: 'Jet Ski Rental', description: 'Enjoy an hour of jet ski fun', price: 90, status: 'Booked', image: 'https://images.unsplash.com/photo-1522347323580-d9f59c12c03e?w=400&h=300&fit=crop' },
-  { id: 9, title: 'Romantic Dinner', description: 'Fine dining experience for two', price: 150, status: 'Available', image: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop' },
-  { id: 10, title: 'City Tour', description: 'Guided tour of the city’s landmarks', price: 70, status: 'Available', image: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?w=400&h=300&fit=crop' }
-];
-
-
+import API from '../utils/axios'; // Import API for backend requests
 
 const Home = () => {
-  const [items, setItems] = useState(sampleItems);
+  const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('');
   const [sort, setSort] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -33,16 +18,32 @@ const Home = () => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [duration, setDuration] = useState(1);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // Fetch items from backend API
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await API.get('/items');
+        setItems(res.data);
+      } catch (error) {
+        setError(true);
+        console.error("Error fetching items:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
 
   // Handle filtering logic
   const handleFilterChange = (event) => {
     setFilter(event.target.value);
     if (event.target.value === 'available') {
-      setItems(sampleItems.filter(item => item.status === 'Available'));
+      setItems(items.filter(item => item.availability === true));
     } else if (event.target.value === 'booked') {
-      setItems(sampleItems.filter(item => item.status === 'Booked'));
-    } else {
-      setItems(sampleItems);
+      setItems(items.filter(item => item.availability === false));
     }
   };
 
@@ -83,16 +84,28 @@ const Home = () => {
     }
   };
 
-  // Handle booking confirmation (Replace with API call)
-  const handleConfirmBooking = () => {
-    console.log("Booking Confirmed:", {
-      item: selectedItem,
-      date: selectedDate,
-      time: selectedTime,
-      duration,
-      totalPrice
-    });
-    handleCloseBooking();
+  // Handle booking confirmation (Send data to backend)
+  const handleConfirmBooking = async () => {
+    const token = localStorage.getItem('token'); // Ensure user is logged in
+    if (!token) {
+      alert("Please login to book an item.");
+      return;
+    }
+
+    const bookingData = {
+      itemId: selectedItem._id,
+      startDate: selectedDate,
+      endDate: selectedDate, // Assuming single-day booking
+    };
+
+    try {
+      await API.post('/bookings', bookingData);
+      alert("Booking confirmed!");
+      handleCloseBooking();
+    } catch (error) {
+      console.error("Error confirming booking:", error);
+      alert("Failed to book item. Please try again.");
+    }
   };
 
   return (
@@ -101,6 +114,10 @@ const Home = () => {
         <Typography variant="h4" gutterBottom align="center">
           Browse Booking Items
         </Typography>
+
+        {/* Loading & Error Handling */}
+        {loading && <CircularProgress />}
+        {error && <Typography color="error">Failed to load items.</Typography>}
 
         {/* Filtering & Sorting */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -129,15 +146,15 @@ const Home = () => {
         {/* Booking Items List */}
         <Grid container spacing={3}>
           {items.map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item.id}>
+            <Grid item xs={12} sm={6} md={4} key={item._id}>
               <Card sx={{ height: '100%' }}>
                 <CardMedia component="img" height="200" image={item.image} alt={item.title} />
                 <CardContent>
                   <Typography variant="h6">{item.title}</Typography>
                   <Typography variant="body2" color="textSecondary">{item.description}</Typography>
                   <Typography variant="body1" sx={{ mt: 1 }}><b>Price:</b> ${item.price}</Typography>
-                  <Typography variant="body2" color={item.status === 'Available' ? 'green' : 'red'}>
-                    {item.status}
+                  <Typography variant="body2" color={item.availability ? 'green' : 'red'}>
+                    {item.availability ? 'Available' : 'Booked'}
                   </Typography>
                 </CardContent>
                 <CardActions>
@@ -145,7 +162,7 @@ const Home = () => {
                     variant="contained" 
                     color="primary" 
                     fullWidth 
-                    disabled={item.status !== 'Available'} 
+                    disabled={!item.availability} 
                     onClick={() => handleOpenBooking(item)}
                   >
                     Book Now
