@@ -1,7 +1,7 @@
 import User from '../models/User.js';
 import Booking from '../models/Booking.js';
 
-// @desc    Get all users
+//     Get all users
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -11,7 +11,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// @desc    Delete user
+//     Delete user
 export const deleteUser = async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
@@ -21,7 +21,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// @desc    Get all bookings
+//     Get all bookings
 export const getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find().populate('user item');

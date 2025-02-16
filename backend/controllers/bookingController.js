@@ -1,7 +1,7 @@
 import Booking from '../models/Booking.js';
 import Item from '../models/Item.js';
 
-// @desc    Create booking
+//   Create booking
 export const createBooking = async (req, res) => {
   try {
     const { itemId, startDate, endDate } = req.body;
@@ -28,7 +28,7 @@ export const createBooking = async (req, res) => {
   }
 };
 
-// @desc    Get user bookings
+//    Get user bookings
 export const getUserBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.id }).populate('item');
@@ -38,7 +38,7 @@ export const getUserBookings = async (req, res) => {
   }
 };
 
-// @desc    Cancel booking
+//   Cancel booking
 export const cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findByIdAndUpdate(

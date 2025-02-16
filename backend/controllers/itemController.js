@@ -1,6 +1,6 @@
 import Item from '../models/Item.js';
 
-// @desc    Get all items
+//     Get all items
 export const getItems = async (req, res) => {
   try {
     const items = await Item.find();
@@ -10,7 +10,7 @@ export const getItems = async (req, res) => {
   }
 };
 
-// @desc    Create item (Admin only)
+//    Create item (Admin only)
 export const createItem = async (req, res) => {
   try {
     const item = await Item.create(req.body);
@@ -20,7 +20,7 @@ export const createItem = async (req, res) => {
   }
 };
 
-// @desc    Update item (Admin only)
+//   Update item (Admin only)
 export const updateItem = async (req, res) => {
   try {
     const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -30,7 +30,7 @@ export const updateItem = async (req, res) => {
   }
 };
 
-// @desc    Delete item (Admin only)
+//   Delete item (Admin only)
 export const deleteItem = async (req, res) => {
   try {
     await Item.findByIdAndDelete(req.params.id);

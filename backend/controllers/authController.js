@@ -1,7 +1,7 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
-// @desc    Register user
+//    Register user
 export const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -12,7 +12,7 @@ export const register = async (req, res) => {
   }
 };
 
-// @desc    Login user
+//    Login user
 export const login = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -29,7 +29,7 @@ export const login = async (req, res) => {
   }
 };
 
-// @desc    Get user profile
+//     Get user profile
 export const getProfile = async (req, res) => {
   const user = await User.findById(req.user.id).select('-password');
   res.json(user);
