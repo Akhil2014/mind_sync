@@ -173,6 +173,9 @@ const AdminPanel = () => {
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
+                <IconButton color="primary" onClick={() => handleOpenUserModal(user)}>
+              <Edit />
+            </IconButton>
                   <IconButton color="error" onClick={() => handleDeleteUser(user._id)}>
                     <Delete />
                   </IconButton>
@@ -189,13 +192,32 @@ const AdminPanel = () => {
         <DialogContent>
           <TextField fullWidth label="Item Name" name="title" onChange={handleItemChange} sx={{ mt: 2 }} />
           <TextField fullWidth label="Price" name="price" type="number" onChange={handleItemChange} sx={{ mt: 2 }} />
+          <TextField fullWidth label="Description" name="description" onChange={handleItemChange} sx={{ mt: 2 }} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseItemModal} color="secondary">Cancel</Button>
           <Button onClick={handleAddItem} color="primary" variant="contained">Add</Button>
         </DialogActions>
       </Dialog>
+
+      
+      <Dialog open={openUserModal} onClose={handleCloseUserModal}>
+        <DialogTitle>Add New User</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth label="Name" name="username" onChange={handleUserChange} sx={{ mt: 2 }} />
+          <TextField fullWidth label="Role" name="role" onChange={handleUserChange} sx={{ mt: 2 }} />
+          <TextField fullWidth label="Email" name="email" type="email" onChange={handleUserChange} sx={{ mt: 2 }} />
+          <TextField fullWidth label="Password" name="password" type="password" onChange={handleUserChange} sx={{ mt: 2 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseUserModal} color="secondary">Cancel</Button>
+          <Button onClick={handleAddUser} color="primary" variant="contained">Add</Button>
+        </DialogActions>
+      </Dialog>
+
     </Container>
+
+    
   );
 };
 
