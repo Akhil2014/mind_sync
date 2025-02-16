@@ -23,7 +23,6 @@ function App() {
             <Route path="/admin" element={<PrivateRoute admin><Admin /></PrivateRoute>} />
           </Routes>
         </Container>
-
     </>
   );
 }
