@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Set the base URL of your backend
 const API = axios.create({
-  baseURL: 'http://localhost:8888/api', // Change this if your backend is deployed
+  baseURL: 'https://mind-sync-1.onrender.com/api/', // Change this if your backend is deployed
 });
 
 // Attach JWT token to every request if the user is logged in
